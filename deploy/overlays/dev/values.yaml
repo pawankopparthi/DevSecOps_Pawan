@@ -1,0 +1,10 @@
+image:
+  repository: REPLACE_WITH_REGISTRY/devsecops-starter-app
+  tag: "REPLACE_WITH_TAG"
+ingress:
+  enabled: true
+  hosts:
+    - host: app.dev.example.com
+      paths:
+        - path: /
+          pathType: Prefix

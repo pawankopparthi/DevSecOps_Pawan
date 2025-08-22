@@ -1,0 +1,30 @@
+replicaCount: 1
+image:
+  repository: REPLACE_WITH_REGISTRY/devsecops-starter-app
+  tag: "REPLACE_WITH_TAG"
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 80
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: app.dev.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+resources:
+  requests: { cpu: "100m", memory: "128Mi" }
+  limits: { cpu: "500m", memory: "256Mi" }
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile: { type: RuntimeDefault }
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities: { drop: ["ALL"] }
+livenessProbe: { httpGet: { path: /health, port: http } }
+readinessProbe: { httpGet: { path: /health, port: http } }

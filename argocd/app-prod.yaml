@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devsecops-starter-prod
+spec:
+  project: default
+  source:
+    repoURL: REPLACE_WITH_GIT_URL
+    targetRevision: main
+    path: deploy/helm/app-chart
+    helm:
+      valueFiles: ["deploy/overlays/prod/values.yaml"]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-prod
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

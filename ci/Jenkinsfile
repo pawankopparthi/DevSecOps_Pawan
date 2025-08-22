@@ -1,0 +1,38 @@
+pipeline {
+  agent any
+  environment {
+    REGISTRY = "REPLACE_WITH_REGISTRY/devsecops-starter-app"
+    IMAGE = "${env.REGISTRY}:${env.GIT_COMMIT}"
+  }
+  options { timestamps() }
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+    stage('Unit Tests') {
+      steps { sh 'cd app && npm ci && npm test' }
+    }
+    stage('SAST/Secrets') {
+      steps {
+        sh 'echo "Integrate SonarQube scanner here"'
+        sh 'gitleaks detect --no-git -v --exit-code 1 || true'
+      }
+    }
+    stage('SCA & SBOM') {
+      steps {
+        sh 'trivy fs --exit-code 1 --severity HIGH,CRITICAL app || true'
+        sh 'syft dir:app -o json > sbom.json || true'
+        archiveArtifacts artifacts: 'sbom.json', fingerprint: true
+      }
+    }
+    stage('Build Image') { steps { sh 'docker build -t ${IMAGE} app' } }
+    stage('Image Scan') { steps { sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${IMAGE} || true' } }
+    stage('Sign & Push') {
+      steps {
+        sh 'echo "docker login ..."'
+        sh 'docker push ${IMAGE}'
+        sh 'echo "cosign sign ${IMAGE} (configure keyless/OIDC)"'
+      }
+    }
+    stage('Policy Check (Helm)') { steps { sh 'conftest test deploy/helm/app-chart/templates --policy policy' } }
+    stage('Bump Dev Image Tag') { steps { sh 'bash scripts/bump_image_tag.sh ${IMAGE} deploy/overlays/dev/values.yaml' } }
+  }
+}
